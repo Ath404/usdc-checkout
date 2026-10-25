@@ -75,3 +75,11 @@ button.link { background: none; border: 0; padding: 0; margin-top: 18px; color: 
   }
   :root:not([data-theme="light"]) .status { background: #1d2025; }
 }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+a.hire { font-family: var(--display); font-weight: 600; font-size: 14px; text-decoration: none; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 999px; white-space: nowrap; }
+a.hire:hover { background: var(--accent); color: var(--paper); }
+a.hire.big { display: inline-block; font-size: 16px; padding: 12px 20px; }
+.cta { margin-top: 44px; padding: 26px 24px; border: 1px solid var(--rule); background: var(--accent-soft); }
+.cta h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0 0 8px; }
+.cta p { margin: 0 0 18px; color: var(--ink-2); }

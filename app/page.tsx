@@ -6,7 +6,12 @@ export default function Page() {
   return (
     <main className="wrap">
       <header>
-        <p className="kicker mono">Demo · test networks only</p>
+        <div className="topbar">
+          <p className="kicker mono">Demo · test networks only</p>
+          <a className="hire" href="https://atharvc.tech/hire">
+            Hire me
+          </a>
+        </div>
         <h1>USDC checkout for a Next.js site</h1>
         <p className="lede">
           Customers pay in USDC on Solana or on an EVM chain. The server confirms the money actually arrived before the order counts. Orders are signed tokens, so there is no database to run.
@@ -14,6 +19,16 @@ export default function Page() {
       </header>
 
       <Checkout items={items} />
+
+      <section className="cta">
+        <h2>Want USDC payments on your site?</h2>
+        <p>
+          I add this to existing sites and apps: Solana, EVM, or both, wired into your orders and fulfilment, with tests against the real USDC contracts. Fixed scope and price before I start.
+        </p>
+        <a className="hire big" href="https://atharvc.tech/hire">
+          Hire me
+        </a>
+      </section>
 
       <section className="notes">
         <h2>How a payment is confirmed</h2>
