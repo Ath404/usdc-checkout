@@ -2,7 +2,7 @@
 
 USDC checkout for a Next.js site. Customers pay on Solana (Solana Pay, by QR or browser wallet) or on an EVM chain (one ERC-20 transfer from a browser wallet). The server confirms what actually reached the merchant before an order counts. There is no database: an order is a signed token.
 
-Demo runs on Solana devnet and Base Sepolia with Circle's test USDC.
+Live demo: https://usdc-checkout-gamma.vercel.app (Solana devnet and Base Sepolia, Circle's test USDC).
 
 ## How a payment is confirmed
 
