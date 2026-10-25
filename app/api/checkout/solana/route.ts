@@ -2,7 +2,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { readOrder } from "@/lib/order";
-import { buildTransfer } from "@/lib/solana";
+import { buildTransfer, preflightSolana } from "@/lib/solana";
 
 /**
  * Solana Pay transaction request endpoint. A wallet that scans the QR code
@@ -40,6 +40,10 @@ export async function POST(req: Request) {
   }
 
   const connection = new Connection(cfg.solana.rpc, "confirmed");
+  const problem = await preflightSolana(connection, order, payer, cfg.solana, { testnet: cfg.solana.cluster !== "mainnet-beta", cluster: cfg.solana.cluster });
+  // `message` is what Solana Pay wallets display; `error` is what our own page reads.
+  if (problem) return NextResponse.json({ error: problem, message: problem }, { status: 400, headers: cors });
+
   const tx = await buildTransfer(connection, order, payer, cfg.solana);
   const transaction = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64");
   return NextResponse.json({ transaction, message: `${order.item}, ${order.amount} USDC` }, { headers: cors });

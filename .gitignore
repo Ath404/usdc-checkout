@@ -6,3 +6,6 @@ next-env.d.ts
 out/
 cache/
 tsconfig.tsbuildinfo
+
+.vercel
+.env*

@@ -3,6 +3,7 @@
 import { Transaction } from "@solana/web3.js";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toBaseUnits } from "@/lib/money";
 import type { Verdict } from "@/lib/verdict";
 
 type Item = { id: string; name: string; amount: string };
@@ -121,6 +122,15 @@ export function Checkout({ items }: { items: Item[] }) {
           params: [{ chainId: chainHex, chainName: created.evm.chainName, rpcUrls: [created.evm.rpc], nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, blockExplorerUrls: [created.evm.explorer] }],
         });
       }
+      // Check balances first, so a wallet without test tokens gets a reason instead of a failed transaction.
+      const usdcHex = (await eth.request({ method: "eth_call", params: [{ to: created.evm.to, data: `0x70a08231${from!.slice(2).toLowerCase().padStart(64, "0")}` }, "latest"] })) as string;
+      const need = toBaseUnits(created.order.amount);
+      if (BigInt(usdcHex) < need) {
+        return setError(`This wallet holds ${Number(BigInt(usdcHex)) / 1e6} USDC on ${created.evm.chainName} and the order is ${created.order.amount}. Test USDC is free at faucet.circle.com (choose ${created.evm.chainName}).`);
+      }
+      const gas = (await eth.request({ method: "eth_getBalance", params: [from, "latest"] })) as string;
+      if (BigInt(gas) === 0n) return setError(`This wallet has no ETH on ${created.evm.chainName} for the network fee. Get a little from any ${created.evm.chainName} faucet, then try again.`);
+
       const hash = (await eth.request({ method: "eth_sendTransaction", params: [{ from, to: created.evm.to, data: created.evm.data }] })) as string;
       setEvmTx(hash);
       setVerdict({ status: "pending", detail: "sent, waiting for confirmations" });
@@ -162,6 +172,18 @@ export function Checkout({ items }: { items: Item[] }) {
               {created.evm.chainName}
             </button>
           </div>
+
+          <p className="testnote">
+            Testing it? You need free test tokens: USDC from <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">faucet.circle.com</a>, plus a little{" "}
+            {chain === "solana" ? (
+              <>
+                devnet SOL from <a href="https://faucet.solana.com" target="_blank" rel="noreferrer">faucet.solana.com</a>
+              </>
+            ) : (
+              <>{created.evm.chainName} ETH</>
+            )}{" "}
+            for the fee. Your wallet must be on the test network, and it may warn that this domain is new.
+          </p>
 
           {chain === "solana" ? (
             <div className="panel">

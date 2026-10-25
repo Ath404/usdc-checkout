@@ -8,7 +8,7 @@ import { createMint, createTransferCheckedInstruction, getAssociatedTokenAddress
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction, Transaction } from "@solana/web3.js";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createOrder } from "@/lib/order";
-import { buildTransfer, verifySolana, type SolanaTarget } from "@/lib/solana";
+import { buildTransfer, preflightSolana, verifySolana, type SolanaTarget } from "@/lib/solana";
 
 const RPC = process.env.SOLANA_TEST_RPC ?? "http://127.0.0.1:8899";
 const connection = new Connection(RPC, "confirmed");
@@ -33,6 +33,32 @@ beforeAll(async () => {
   const ata = await getOrCreateAssociatedTokenAccount(connection, payer, mint, payer.publicKey);
   await mintTo(connection, payer, mint, ata.address, payer, 1_000_000_000n);
   target = { recipient: merchant.publicKey.toBase58(), mint: mint.toBase58() };
+});
+
+describe("preflightSolana", () => {
+  const opts = { testnet: true, cluster: "devnet" };
+
+  it("passes a funded payer", async () => {
+    expect(await preflightSolana(connection, createOrder("Field Kit", "4.00"), payer.publicKey, target, opts)).toBeNull();
+  });
+
+  it("explains a wallet with SOL but no USDC, with the faucet", async () => {
+    const empty = Keypair.generate();
+    await airdrop(empty.publicKey, 1);
+    expect(await preflightSolana(connection, createOrder("Field Kit", "4.00"), empty.publicKey, target, opts)).toMatch(/holds 0 USDC on devnet and the order is 4\.00\. Test USDC is free at faucet\.circle\.com/);
+  });
+
+  it("explains a wallet with no SOL for fees", async () => {
+    expect(await preflightSolana(connection, createOrder("Field Kit", "4.00"), Keypair.generate().publicKey, target, opts)).toMatch(/no SOL on devnet/);
+  });
+
+  it("refuses the merchant paying itself", async () => {
+    expect(await preflightSolana(connection, createOrder("Field Kit", "4.00"), merchant.publicKey, target, opts)).toMatch(/merchant's own wallet/);
+  });
+
+  it("explains a wallet holding less than the order", async () => {
+    expect(await preflightSolana(connection, createOrder("Field Kit", "100000.00"), payer.publicKey, target, opts)).toMatch(/holds 1000 USDC on devnet and the order is 100000\.00/);
+  });
 });
 
 describe("verifySolana against a local validator", () => {

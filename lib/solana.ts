@@ -30,6 +30,39 @@ export async function buildTransfer(connection: Connection, order: Order, payer:
   return tx;
 }
 
+/**
+ * Say why a payment would fail before the wallet has to. Without this, a
+ * wallet with no USDC gets an opaque "failed to simulate" warning and a
+ * transaction that can only fail. Returns null when the payment should go through.
+ */
+export async function preflightSolana(connection: Connection, order: Order, payer: PublicKey, t: SolanaTarget, opts: { testnet: boolean; cluster: string }): Promise<string | null> {
+  if (payer.toBase58() === t.recipient) return "That is the merchant's own wallet, so the payment would go nowhere. Pay from a different wallet.";
+
+  const sol = await connection.getBalance(payer, "confirmed");
+  if (sol === 0) {
+    return `This wallet has no SOL on ${opts.cluster} to pay the network fee.${opts.testnet ? " Get free test SOL at faucet.solana.com, then try again." : ""}`;
+  }
+
+  const ata = getAssociatedTokenAddressSync(new PublicKey(t.mint), payer);
+  const held = await connection
+    .getTokenAccountBalance(ata, "confirmed")
+    .then((b) => BigInt(b.value.amount))
+    .catch(() => 0n);
+  const need = toBaseUnits(order.amount);
+  if (held < need) {
+    const have = Number(held) / 10 ** USDC_DECIMALS;
+    return `This wallet holds ${have} USDC on ${opts.cluster} and the order is ${order.amount}.${opts.testnet ? " Test USDC is free at faucet.circle.com (choose Solana Devnet), then try again." : ""}`;
+  }
+
+  const tx = await buildTransfer(connection, order, payer, t);
+  const sim = await connection.simulateTransaction(tx);
+  if (sim.value.err) {
+    const why = [...(sim.value.logs ?? [])].reverse().find((l) => /Error|failed/i.test(l)) ?? JSON.stringify(sim.value.err);
+    return `The payment would fail on-chain: ${why.replace(/^Program log: /, "")}`;
+  }
+  return null;
+}
+
 /** Net change in the recipient's balance of `mint` across a transaction, in base units. */
 export function receivedBy(tx: ParsedTransactionWithMeta, recipient: string, mint: string): bigint {
   const pre = new Map<number, bigint>();

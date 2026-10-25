@@ -83,3 +83,5 @@ a.hire.big { display: inline-block; font-size: 16px; padding: 12px 20px; }
 .cta { margin-top: 44px; padding: 26px 24px; border: 1px solid var(--rule); background: var(--accent-soft); }
 .cta h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0 0 8px; }
 .cta p { margin: 0 0 18px; color: var(--ink-2); }
+.testnote { font-size: 15px; color: var(--muted); margin: 0 0 18px; padding: 10px 12px; border-left: 2px solid var(--accent); background: var(--accent-soft); }
+.testnote a { color: var(--accent); }
